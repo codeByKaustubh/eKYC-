@@ -53,7 +53,11 @@ class LiveForensicTransformer(VideoTransformerBase):
         self.attack_votes = []
         self.risk_history = []
         
-        self.face_cascade = fe.get_face_cascade()
+        cascade_path = "models/haarcascade_frontalface_default.xml"
+        if os.path.exists(cascade_path):
+            self.face_cascade = cv2.CascadeClassifier(cascade_path)
+        else:
+            self.face_cascade = None
             
         try:
             models = fe.get_models()
@@ -74,19 +78,14 @@ class LiveForensicTransformer(VideoTransformerBase):
         bx, by, bw, bh = gx1, gy1, (gx2 - gx1), (gy2 - gy1)
         found = False
         if self.face_cascade is not None and (self.frame_count % 6 == 0 or not hasattr(self, "_last_box")):
-            try:
-                small = cv2.resize(gray, (0, 0), fx=0.5, fy=0.5)
-                faces = self.face_cascade.detectMultiScale(small, scaleFactor=1.15, minNeighbors=4, minSize=(30, 30))
-                if len(faces) > 0:
-                    faces = sorted(faces, key=lambda b: b[2] * b[3], reverse=True)
-                    fx, fy, fw, fh = faces[0]
-                    bx, by, bw, bh = fx * 2, fy * 2, fw * 2, fh * 2
-                    self._last_box = (bx, by, bw, bh)
-                    found = True
-            except Exception:
-                if hasattr(self, "_last_box"):
-                    bx, by, bw, bh = self._last_box
-                    found = True
+            small = cv2.resize(gray, (0, 0), fx=0.5, fy=0.5)
+            faces = self.face_cascade.detectMultiScale(small, scaleFactor=1.15, minNeighbors=4, minSize=(30, 30))
+            if len(faces) > 0:
+                faces = sorted(faces, key=lambda b: b[2] * b[3], reverse=True)
+                fx, fy, fw, fh = faces[0]
+                bx, by, bw, bh = fx * 2, fy * 2, fw * 2, fh * 2
+                self._last_box = (bx, by, bw, bh)
+                found = True
         elif hasattr(self, "_last_box"):
             bx, by, bw, bh = self._last_box
             found = True
