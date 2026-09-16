@@ -14,8 +14,17 @@ CASCADE_PATH = os.path.join(os.path.dirname(__file__), "models", "haarcascade_fr
 
 def get_face_cascade():
     global _CASCADE
-    if _CASCADE is None and os.path.exists(CASCADE_PATH):
-        _CASCADE = cv2.CascadeClassifier(CASCADE_PATH)
+    if _CASCADE is None:
+        try:
+            if hasattr(cv2, "CascadeClassifier"):
+                if os.path.exists(CASCADE_PATH):
+                    _CASCADE = cv2.CascadeClassifier(CASCADE_PATH)
+                elif hasattr(cv2, "data") and hasattr(cv2.data, "haarcascades"):
+                    alt_path = os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml")
+                    if os.path.exists(alt_path):
+                        _CASCADE = cv2.CascadeClassifier(alt_path)
+        except Exception:
+            _CASCADE = None
     return _CASCADE
 
 def get_models():

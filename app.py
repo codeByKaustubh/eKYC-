@@ -53,11 +53,7 @@ class LiveForensicTransformer(VideoTransformerBase):
         self.attack_votes = []
         self.risk_history = []
         
-        cascade_path = "models/haarcascade_frontalface_default.xml"
-        if os.path.exists(cascade_path):
-            self.face_cascade = cv2.CascadeClassifier(cascade_path)
-        else:
-            self.face_cascade = None
+        self.face_cascade = fe.get_face_cascade()
             
         try:
             models = fe.get_models()
