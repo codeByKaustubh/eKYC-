@@ -74,14 +74,19 @@ class LiveForensicTransformer(VideoTransformerBase):
         bx, by, bw, bh = gx1, gy1, (gx2 - gx1), (gy2 - gy1)
         found = False
         if self.face_cascade is not None and (self.frame_count % 6 == 0 or not hasattr(self, "_last_box")):
-            small = cv2.resize(gray, (0, 0), fx=0.5, fy=0.5)
-            faces = self.face_cascade.detectMultiScale(small, scaleFactor=1.15, minNeighbors=4, minSize=(30, 30))
-            if len(faces) > 0:
-                faces = sorted(faces, key=lambda b: b[2] * b[3], reverse=True)
-                fx, fy, fw, fh = faces[0]
-                bx, by, bw, bh = fx * 2, fy * 2, fw * 2, fh * 2
-                self._last_box = (bx, by, bw, bh)
-                found = True
+            try:
+                small = cv2.resize(gray, (0, 0), fx=0.5, fy=0.5)
+                faces = self.face_cascade.detectMultiScale(small, scaleFactor=1.15, minNeighbors=4, minSize=(30, 30))
+                if len(faces) > 0:
+                    faces = sorted(faces, key=lambda b: b[2] * b[3], reverse=True)
+                    fx, fy, fw, fh = faces[0]
+                    bx, by, bw, bh = fx * 2, fy * 2, fw * 2, fh * 2
+                    self._last_box = (bx, by, bw, bh)
+                    found = True
+            except Exception:
+                if hasattr(self, "_last_box"):
+                    bx, by, bw, bh = self._last_box
+                    found = True
         elif hasattr(self, "_last_box"):
             bx, by, bw, bh = self._last_box
             found = True

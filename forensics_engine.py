@@ -14,18 +14,32 @@ CASCADE_PATH = os.path.join(os.path.dirname(__file__), "models", "haarcascade_fr
 
 def get_face_cascade():
     global _CASCADE
-    if _CASCADE is None:
+    if _CASCADE is not None:
+        if hasattr(_CASCADE, "empty") and not _CASCADE.empty():
+            return _CASCADE
+        _CASCADE = None
+
+    if not hasattr(cv2, "CascadeClassifier"):
+        return None
+
+    candidates = []
+    if hasattr(cv2, "data") and hasattr(cv2.data, "haarcascades"):
+        candidates.append(os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml"))
+    candidates.append(CASCADE_PATH)
+    candidates.append(os.path.abspath(CASCADE_PATH))
+    candidates.append("models/haarcascade_frontalface_default.xml")
+
+    for p in candidates:
         try:
-            if hasattr(cv2, "CascadeClassifier"):
-                if os.path.exists(CASCADE_PATH):
-                    _CASCADE = cv2.CascadeClassifier(CASCADE_PATH)
-                elif hasattr(cv2, "data") and hasattr(cv2.data, "haarcascades"):
-                    alt_path = os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml")
-                    if os.path.exists(alt_path):
-                        _CASCADE = cv2.CascadeClassifier(alt_path)
+            if p and os.path.exists(p):
+                clf = cv2.CascadeClassifier(p)
+                if hasattr(clf, "empty") and not clf.empty():
+                    _CASCADE = clf
+                    return _CASCADE
         except Exception:
-            _CASCADE = None
-    return _CASCADE
+            continue
+
+    return None
 
 def get_models():
     global _MODELS
@@ -253,13 +267,17 @@ def analyze_video(video_path, max_frames=15):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         if (sampled_count % 4 == 1 or cached_box is None) and cascade is not None:
-            small = cv2.resize(gray, (0, 0), fx=0.5, fy=0.5)
-            faces = cascade.detectMultiScale(small, 1.15, 4, minSize=(30, 30))
-            if len(faces) > 0:
-                fx, fy, fw, fh = faces[0]
-                cached_box = (fx * 2, fy * 2, fw * 2, fh * 2)
-            elif cached_box is None:
-                cached_box = (int(w * 0.28), int(h * 0.18), int(w * 0.44), int(h * 0.58))
+            try:
+                small = cv2.resize(gray, (0, 0), fx=0.5, fy=0.5)
+                faces = cascade.detectMultiScale(small, 1.15, 4, minSize=(30, 30))
+                if len(faces) > 0:
+                    fx, fy, fw, fh = faces[0]
+                    cached_box = (fx * 2, fy * 2, fw * 2, fh * 2)
+                elif cached_box is None:
+                    cached_box = (int(w * 0.28), int(h * 0.18), int(w * 0.44), int(h * 0.58))
+            except Exception:
+                if cached_box is None:
+                    cached_box = (int(w * 0.28), int(h * 0.18), int(w * 0.44), int(h * 0.58))
         elif cached_box is None:
             cached_box = (int(w * 0.28), int(h * 0.18), int(w * 0.44), int(h * 0.58))
 
